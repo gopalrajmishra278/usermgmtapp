@@ -1,5 +1,7 @@
 package com.usermanagementapp.util;
 
+
+
 import javax.mail.internet.MimeMessage;
 
 import org.springframework.mail.javamail.JavaMailSender;

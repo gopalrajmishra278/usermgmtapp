@@ -5,13 +5,13 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.usermanagementapp.entities.City;
+import com.usermanagementapp.entities.CityMaster;
 
 
-public interface CityRepo extends JpaRepository<City, Serializable>{
+public interface CityRepo extends JpaRepository<CityMaster, Serializable>{
 	
 	//select * from CITY_MASTER where STATE_ID = ?
-	public List<City> findByStateId(Integer stateId);
+	public List<CityMaster> findByStateId(Integer stateId);
 	
 	
 

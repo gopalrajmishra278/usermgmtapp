@@ -10,15 +10,15 @@ import java.util.stream.Stream;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
 import com.usermanagementapp.bindings.LoginForm;
 import com.usermanagementapp.bindings.UnlockAccountForm;
 import com.usermanagementapp.bindings.UserForm;
-import com.usermanagementapp.entities.City;
-import com.usermanagementapp.entities.Country;
-import com.usermanagementapp.entities.State;
+import com.usermanagementapp.entities.CityMaster;
+import com.usermanagementapp.entities.CountryMaster;
+import com.usermanagementapp.entities.StateMaster;
+import com.usermanagementapp.entities.UserMaster;
 import com.usermanagementapp.repositories.CityRepo;
 import com.usermanagementapp.repositories.CountryRepo;
 import com.usermanagementapp.repositories.StateRepo;
@@ -41,8 +41,11 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Autowired
     CityRepo cityRepo;
 	
-	@Autowired	
+	@Autowired
 	EmailUtils emailUtils;
+	
+	
+	private Random random = new Random();
 	
 	
 	
@@ -50,7 +53,7 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Override
 	public String checkEmail(String email) {
 		
-		User user = userRepo.findByEmail(email);
+		UserMaster user = userRepo.findByEmail(email);
 		
 		if(user==null) {
 			
@@ -65,7 +68,7 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Override
 	public Map<Integer, String> getCountries() {
 		
-		    List<Country> countries = countryRepo.findAll();
+		    List<CountryMaster> countries = countryRepo.findAll();
 		    Map<Integer, String> countryMap = new HashMap();
 		    
 		    countries.forEach(country -> {
@@ -80,15 +83,12 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Override
 	public Map<Integer, String> getStates(Integer countryId) {
 		
-		 List<State> state = stateRepo.findByCountryId(countryId);
+		 List<StateMaster> state = stateRepo.findByCountryId(countryId);
 		 
 		 Map<Integer, String> stateMap = new HashMap(); 
 		
-		 state.forEach(stateName -> {
-			 
-			 
-			 stateMap.put(stateName.getStateId(), stateName.getStateName()); 
-			 });
+		 state.forEach(stateName -> stateMap.put(stateName.getStateId(), stateName.getStateName()));
+			
 		return stateMap;
 		
 
@@ -97,14 +97,11 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Override
 	public Map<Integer, String> getCities(Integer stateId) {
 		
-		List<City> cities = cityRepo.findByStateId(stateId);
+		List<CityMaster> cities = cityRepo.findByStateId(stateId);
 		
 		Map<Integer, String> cityMap = new HashMap();
 		
-		cities.forEach(city ->{
-			
-			cityMap.put(city.getCityId(), city.getCityName());
-		});
+		cities.forEach(city -> cityMap.put(city.getCityId(), city.getCityName()));
 		
 		return cityMap;
 	}
@@ -114,11 +111,11 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 		
 		//copy binding object into entity object
 		
-		User entity = new User();
+	    UserMaster entity = new UserMaster();
 		
 		BeanUtils.copyProperties(userForm, entity);
 		
-		//Generate and set password
+		//Generate and set Random password
 		
 		entity.setUserPwd(generateRandomPwd());
 		
@@ -129,15 +126,14 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 		
 		 userRepo.save(entity);
 		
-		//sent  Email to Unlock account
 		 
-		 emailUtils.sendEmail(to, subject, body);
-		 
+		 //sent pwd to unlock account
+	
 		 String to = userForm.getEmail();
 		 String subject = "Registration Email";
-		 String body = "";
+		 String body = readEmailBody("REG_EMAIL_BODY.txt", entity);
 		 
-		 emailUtils.sentEmail(to, subject, body);
+		 emailUtils.sendEmail(to, subject, body);
 		 
 		
           return "User Account Created";
@@ -146,14 +142,13 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Override
 	public String unlockAccount(UnlockAccountForm unlockAccForm) {
 		
-		
 		String email = unlockAccForm.getEmail();
 		
-		User user = userRepo.findByEmail(email);
+		UserMaster user = userRepo.findByEmail(email);
 		
-		if(user.getUserPwd().equals(unlockAccForm.getTempPwd()){
+		if(user.getUserPwd().equals(unlockAccForm.getTempPwd())){
 			
-			user.setUserPwd(unlockAccForm.setNewPwd());
+			user.setUserPwd(unlockAccForm.getNewPwd());
 			user.setAccStatus("Unlocked");
 			userRepo.save(user);
 			return "Account Unlocked";
@@ -166,7 +161,7 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Override
 	public String login(LoginForm loginForm) {
 		
-		User user = userRepo.findByEmailAndUserPwd(loginForm.getEmail(), loginForm.getPassword());
+		UserMaster user = userRepo.findByEmailAndUserPwd(loginForm.getEmail(), loginForm.getPassword());
 		
 		if(user==null) {
 			
@@ -185,16 +180,19 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 	@Override
 	public String forgotPwd(String email) {
 		
-		User user = userRepo.findByEmail(email);
+		UserMaster user = userRepo.findByEmail(email);
 		
 		if(user==null) {
 			
 			return "No Account found";
 		}
 		
+		String subject = "Recover Password";
+		String body = readEmailBody("FORGOT_PWD_EMAIL_BODY.txt", user);
 		
+		emailUtils.sendEmail(email, subject, body);
 		
-		return null;
+		return "Password send to registered email";
 	}
 	
 	
@@ -204,10 +202,7 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 		String text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 		
 		StringBuilder sb = new StringBuilder();
-		
-	    Random random = new Random();
-	    
-	    int pwdLength = 6;
+		int pwdLength = 6;
 	    
 	    for(int i=1; i < pwdLength; i++) {
 	    	
@@ -222,27 +217,28 @@ public class UserMgmtServiceImpl implements UserMgmtService{
 		}
 	
 	
-	public String readEmailBody(String filename, User user)
+	public String readEmailBody(String filename, UserMaster user)
 	{
+		StringBuilder sb = new StringBuilder();
 		try(Stream<String> lines = Files.lines(Paths.get(filename))){
 			
 			lines.forEach(line -> {
 				
-				line.replace("${firstName}", user.getFName());
-				line.replace("${firstName}", user.getFirstName());
+			    line.replace("${FNAME}", user.getFName());
+			    line.replace("${LNAME}", user.getLName());
+				line.replace("${TEMP_PWD}", user.getUserPwd());
+				line.replace("${EMAIL}", user.getEmail());
+				line.replace("${PWD}", user.getUserPwd());
+				sb.append(line);
 				
-				
-			})
+			});
 			
-			
-			
-			
-		}catch(Exception e) {
+			}catch(Exception e) {
 			
 			e.printStackTrace();
 		}
 		
-		return null;
+		return sb.toString();
 		
 		
 	}

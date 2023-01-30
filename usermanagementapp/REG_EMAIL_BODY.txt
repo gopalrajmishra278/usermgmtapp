@@ -1,0 +1,22 @@
+
+Hi ${FNAME}, ${LNAME} <br/>
+<br/>
+
+Welcome to Gopal IT family, your registration is almost completed. <br/>
+<br/>
+
+Please unlock your account using below details.
+<br/>
+
+Temporary Password : ${TEMP_PWD} <br/>
+
+<br/>
+
+
+<a href="http://localhost:4200/unlock?email=${EMAIL}">click here to unlock</a>  <br/>
+
+
+<br/>
+
+Thanks,<br/>
+Gopal IT.<br/>

@@ -22,6 +22,7 @@ public class UserRestController {
 	@Autowired
 	private UserMgmtService userMgmtService;
 	
+	@PostMapping("/login")
 	public ResponseEntity<String> login(@RequestBody LoginForm loginForm){
 		
 		String status=userMgmtService.login(loginForm);
@@ -35,15 +36,15 @@ public class UserRestController {
 		return userMgmtService.getCountries();
 	}
 	
-	@GetMapping("/state{countryId}")
-	public Map<Integer, String> loadStates(Integer countryId){
+	@GetMapping("/states/{countryId}")
+	public Map<Integer, String> loadStates(@PathVariable Integer countryId){
 		
 		
 		return userMgmtService.getStates(countryId);
 	}
 	
-	@GetMapping("/cities{stateId}")
-	public Map<Integer, String> loadCities(Integer stateId){
+	@GetMapping("/cities/{stateId}")
+	public Map<Integer, String> loadCities(@PathVariable Integer stateId){
 		
 		return userMgmtService.getCities(stateId);
 	}
